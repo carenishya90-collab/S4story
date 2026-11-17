@@ -1,2 +1,12 @@
-# Auto detect text files and perform LF normalization
 * text=auto
+*.ps1 text eol=lf
+*.md text eol=lf
+*.txt text eol=crlf
+*.json text eol=lf
+*.dll binary
+*.exe binary
+*.pdb binary
+*.png binary
+*.ico binary
+*.zip binary
+*.package binary

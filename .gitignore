@@ -1,0 +1,35 @@
+# Release artifacts (upload to GitHub Releases, do not commit)
+dist/
+*.zip
+*.7z
+*.rar
+
+# Temporary/build files
+*.log
+*.tmp
+*.bak
+*.original
+*.before_*
+Presets_Backup/
+Presets_Backup_Before_Bulk.zip
+Presets_Need_Backup_Before_Translation.zip
+
+# User projects and exported mods (never commit)
+Projects/
+_Backups/
+_Staging/
+*.package
+
+# Visual Studio / .NET
+.vs/
+bin/
+obj/
+packages/
+*.user
+*.suo
+*.userprefs
+
+# OS
+Thumbs.db
+desktop.ini
+.DS_Store
