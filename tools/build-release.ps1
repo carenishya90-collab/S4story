@@ -91,6 +91,15 @@ try {
         Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $releaseDir $_.Name) -Force
     }
 
+    Write-Host "Copying MC5 script tools to Tools/..."
+    $toolsRelease = Join-Path $releaseDir "Tools"
+    New-Item -ItemType Directory -Force -Path $toolsRelease | Out-Null
+    foreach ($toolFile in @("mc5_autopatch.py", "install_mc5_autopatch.ps1", "patch_mc5_ts4script.py")) {
+        $toolSrc = Join-Path $PSScriptRoot $toolFile
+        if (!(Test-Path -LiteralPath $toolSrc)) { throw "Tool file missing: $toolSrc" }
+        Copy-Item -LiteralPath $toolSrc -Destination (Join-Path $toolsRelease $toolFile) -Force
+    }
+
     Write-Host "Writing BUILD_INFO.txt..."
     $buildInfo = New-Object System.Collections.Generic.List[string]
     $buildInfo.Add("The Sims 4 Mod Constructor V5 - Russian build")
