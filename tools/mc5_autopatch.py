@@ -29,9 +29,11 @@ are correct. It only touches files that contain the exact MC5 patterns.
 """
 
 import datetime
+import io
 import os
 import py_compile
 import re
+import tokenize
 
 LOG_PATH = r"C:\Users\User\Documents\The Sims 4 Mod Constructor\Projects\_Tools\mc5_autopatch.log"
 
@@ -39,7 +41,7 @@ _SIGNATURE_RE = re.compile(r"def (\w+)\(original, self, packs_to_load=None\):")
 _CALL_RE = re.compile(r"(?m)^([ \t]+)original\(self, packs_to_load\)[ \t]*\r?$")
 _ACTION_TRIGGER_RE = re.compile(
     r"(?m)^def (\w+_activate_action_triggers)\(original, self, \*args, \*\*kwargs\):"
-    r"[ \t]*\r?\n((?:[ \t]+[^\r\n]*(?:\r?\n|$))*)"
+    r"[ \t]*\r?\n((?:(?:[ \t]+[^\r\n]*)?\r?\n)*)"
 )
 
 
@@ -53,6 +55,17 @@ def _log(message):
         pass
 
 
+def _has_code_name(text, name):
+    """True if `name` is used as a Python name, ignoring comments and strings."""
+    try:
+        for token in tokenize.generate_tokens(io.StringIO(text).readline):
+            if token.type == tokenize.NAME and token.string == name:
+                return True
+    except (IndentationError, tokenize.TokenError):
+        return name in text
+    return False
+
+
 def _patch_packs_to_load(text):
     """Bug 1.1: packs_to_load=None signature and call -> *args, **kwargs."""
     if "packs_to_load" not in text or "load_data_into_class_instances" not in text:
@@ -61,7 +74,9 @@ def _patch_packs_to_load(text):
     text, calls = _CALL_RE.subn(r"\1original(self, *args, **kwargs)", text)
     if defs == 0 and calls == 0:
         return text, 0, 0, False
-    if "packs_to_load" in text:
+    # Ignore comments/strings that mention packs_to_load (the projects contain
+    # explanatory comments). Refuse only if an actual code reference remains.
+    if _has_code_name(text, "packs_to_load"):
         return text, 0, 0, True
     return text, defs, calls, False
 
@@ -75,9 +90,9 @@ def _patch_action_trigger(text, newline):
         name, body = match.group(1), match.group(2)
         if "original(" in body:
             return match.group(0)
-        body = body.rstrip("\r\n")
+        body = body.replace("\r\n", "\n").replace("\r", "\n").rstrip("\n")
         indented = newline.join(
-            ("    " + line.rstrip("\r")) if line.strip() else line
+            ("    " + line) if line.strip() else ""
             for line in body.split("\n")
         )
         count += 1
@@ -92,7 +107,7 @@ def _patch_action_trigger(text, newline):
             "    return result"
             % (name, newline, newline, newline, indented, newline,
                newline, newline, newline)
-        )
+        ) + newline
 
     text = _ACTION_TRIGGER_RE.sub(_fix, text)
     return text, count
